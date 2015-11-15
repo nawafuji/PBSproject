@@ -1,8 +1,8 @@
-1. how to use example
+How to use example
 
-2. Download Eigen and place it in the same directory with Example and GLUT
+1. Download Eigen and place it in the same directory with Example and GLUT
 
-   cd Example
+2. cd Example
 
    mkdir build
 
