@@ -1,6 +1,6 @@
 #include "Balloon.h"
 
-Balloon::Balloon(double r)
+Balloon::Balloon(double r) : ParticleObject(r)
 {
     positions = Eigen::MatrixXd(3, 4);
     

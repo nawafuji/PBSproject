@@ -1,10 +1,6 @@
-#include <iostream>
-#include "GLUT/glut.h"
-#include <cmath>
-#include <Eigen/core>
-#include <Eigen/Geometry>
+#include "ParticleObject.h"
 
-class Balloon
+class Balloon : public ParticleObject
 {
 public:
     Balloon(double r);

@@ -30,7 +30,8 @@ bool isPlaying = true;
 
 using namespace std;
 
-Balloon* obj = NULL;
+ParticleObject* obj = NULL;
+ 
 
 unsigned int getTime()
 {
