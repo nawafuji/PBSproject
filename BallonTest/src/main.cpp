@@ -6,14 +6,21 @@
 #include <iostream>
 #include "Balloon.h"
 
+#include <igl/readOFF.h>
+#include <igl/viewer/Viewer.h>
+#include <igl/per_vertex_normals.h>
+#include <igl/adjacency_list.h>
+
+
 unsigned int lastTick=0;
-unsigned int stepping= 10000; //(unsigned int)(1e6 * Scene::step);
+double timestep = 0.1; //second
+unsigned int stepping= (unsigned int)(timestep * 1e6); //(unsigned int)(1e6 * Scene::step);
 
 
 // camera parameters
 float sphi = 0.0;
 float stheta = 0.0;
-float sdepth = 100;
+float sdepth = 300;
 float zNear = 1.0, zFar = 1000.0;
 
 float windowWidth = 600;
@@ -25,12 +32,14 @@ int downY;
 float gridWidth = 5.0;
 int gridNum = 20;
 
-char transMode = 'r';
-bool isPlaying = true;
+char transMode = 'e';
+bool isPlaying = false;
+bool once = false;
 
 using namespace std;
 
 Balloon* obj = NULL;
+ 
 
 unsigned int getTime()
 {
@@ -59,10 +68,21 @@ void init()
     // Setting depth
     glEnable(GL_DEPTH_TEST);
 
-    obj = new Balloon(1.0);
-
     lastTick = getTime();
 
+}
+
+void initBalloon()
+{
+    //obj = new Balloon(1.0);
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    Eigen::MatrixXd VN;
+    std::vector<std::vector<int>> VV;
+
+    igl::readOFF("../model/sphere_scaled.off", V, F);
+
+    obj = new Balloon(0.1, timestep, V, F);
 }
 
 void dispGrid()
@@ -110,6 +130,11 @@ void display(void)
       if(isPlaying)
       {
         obj->update();
+        if(once)
+        {
+          isPlaying = false;
+          once = false;
+        }
       }
     }
     obj->render();
@@ -178,6 +203,19 @@ void keyboard(unsigned char key, int x, int y)
       case 'p':
         isPlaying = !isPlaying;
         break;
+      case 'o':
+        isPlaying = true;
+        once = true;
+        break;
+      case 'h':
+        obj->pomp(0.02);
+        break;
+      case 'l':
+        obj->pomp(0.02);
+        break;
+      case 'b':
+        obj->burst();
+        break;
       default:
         break;
     }
@@ -211,6 +249,8 @@ int main(int argc, char** argv)
     glutReshapeFunc(reshape);
     // glutIdleFunc(idle);
     init();
+
+    initBalloon();
 	
     glutMainLoop();
     // delete sc;
