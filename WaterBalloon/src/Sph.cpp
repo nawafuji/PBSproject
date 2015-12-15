@@ -324,4 +324,21 @@ float Sph::getPressure()
 void Sph::setRadius(float r_new)
 {
     radius_squared=r_new*r_new;
-}
+    double x_t,z_t,y_t;
+    for (int i=0; i<N;++i)
+    {
+        x_t=x(i,0);
+         y_t=x(i,1);
+         z_t=x(i,2);
+        if ((x_t*x_t+y_t*y_t+z_t*z_t)>radius_squared) {
+            if (x_t*x_t>radius_squared) {
+                x(i,0)=sqrt(r_new);
+            }
+            if (y_t*y_t>radius_squared) {
+                x(i,1)=sqrt(r_new);
+            }
+            if (z_t*z_t>radius_squared) {
+                x(i,2)=sqrt(r_new);
+            }
+        }
+    }}
