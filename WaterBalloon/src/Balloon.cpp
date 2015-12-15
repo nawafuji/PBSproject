@@ -36,6 +36,7 @@ Balloon::Balloon(double r, double dt, Eigen::MatrixXd positions, Eigen::MatrixXi
     igl::vertex_triangle_adjacency(m_positions, m_faces, m_vertextoface, tmp_list);
     initEdges();
     computeNormals();
+    calcAveRadius();
 
     m_forces += m_air_pressure * m_normals;
     m_threshold_ratio = Eigen::VectorXd::Ones(m_edges.rows()) * threshold_ratio;
@@ -58,17 +59,17 @@ void Balloon::render()
       glPushMatrix();
       {
         glTranslated(m_positions(i,0), m_positions(i,1), m_positions(i,2));
-        glutSolidSphere(1.0, 50, 50);
+        glutSolidSphere(m_radius, 50, 50);
       }
       glPopMatrix();
 
       glPushMatrix();
       {
-        if(renderNormals)
+        if(false)
         {
-          double nl = 10;
-          glLineWidth(0.05);
-          glColor3f(0.0, 1.0, 0.0);
+          double nl = 5;
+          glLineWidth(0.01);
+          glColor3d(0.0, 1.0, 0.0);
           glBegin(GL_LINES);
           glVertex3d(m_positions(i,0), m_positions(i,1), m_positions(i,2));
           glVertex3d(m_positions(i,0) + m_normals(i,0) * nl, m_positions(i,1) + m_normals(i,1) * nl, m_positions(i,2) + m_normals(i,2) * nl);
@@ -84,9 +85,10 @@ void Balloon::render()
       {
         if(m_faceactive(i) == 1)
         {
-          glLineWidth(0.1);
-          glColor3f(0.0, 1.0, 0.0);
-          glBegin(GL_TRIANGLES);
+          glLineWidth(0.01);
+          glColor4d(1.0, 0.0, 0.0, 1.0);
+          // glBegin(GL_TRIANGLES);
+          glBegin(GL_LINE_LOOP);
           glVertex3d(m_positions(m_faces(i,0),0), m_positions(m_faces(i,0),1), m_positions(m_faces(i,0),2));
           glVertex3d(m_positions(m_faces(i,1),0), m_positions(m_faces(i,1),1), m_positions(m_faces(i,1),2));
           glVertex3d(m_positions(m_faces(i,2),0), m_positions(m_faces(i,2),1), m_positions(m_faces(i,2),2));
@@ -96,7 +98,6 @@ void Balloon::render()
       glPopMatrix();
     }
 }
-
 
 void Balloon::update()
 {
@@ -121,6 +122,8 @@ void Balloon::update()
     }
     m_positions = X_n;
     m_speeds = V_n;
+
+    calcAveRadius();
 
     m_forces = Eigen::MatrixXd::Zero(m_positions.rows(), m_positions.cols());
 
@@ -284,4 +287,23 @@ void Balloon::burst()
     m_edgeactive(m_facetoedge(i,1)) = 0;
     m_edgeactive(m_facetoedge(i,2)) = 0;
     isActive = false;
+}
+
+void Balloon::calcAveRadius()
+{
+    double r = 0;
+    for (int i = 0; i<m_positions.rows(); i++) {
+      r+=m_positions.row(i).norm();
+    }
+    m_average_radius = r/(double)m_positions.rows();
+}
+
+double Balloon::getAveRadius()
+{
+    return m_average_radius;
+}
+
+void Balloon::setAirPressure(double p)
+{
+    m_air_pressure = p;
 }
