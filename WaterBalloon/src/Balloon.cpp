@@ -181,8 +181,10 @@ void Balloon::update()
         Eigen::Vector3d v_1 = m_speeds.row(m_edges(i,0));
         Eigen::Vector3d v_2 = m_speeds.row(m_edges(i,1));
 
-        f_n -= k*((x_1 - x_2).norm() - m_edgelength(i))*(x_1 - x_2).normalized();
-        f_n -= c*((v_1 - v_2).dot((x_1 - x_2).normalized()))*(x_1 - x_2).normalized();
+        if((x_1-x_2).norm() > m_edgelength(i)){
+          f_n -= k*((x_1 - x_2).norm() - m_edgelength(i))*(x_1 - x_2).normalized();
+        }
+          f_n -= c*((v_1 - v_2).dot((x_1 - x_2).normalized()))*(x_1 - x_2).normalized();
 
         m_forces.row(m_edges(i,0)) += f_n;
         m_forces.row(m_edges(i,1)) += -f_n;
