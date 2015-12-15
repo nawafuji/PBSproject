@@ -5,7 +5,7 @@
 #include <cmath>
 #include <random>
 #include "Sph.h"
-
+#include <omp.h>
 
 using  namespace Eigen;//Eigen::Matrix2Xd, Eigen::MatrixXd,Eigen::MatrixXi,Eigen::VectorXd;
 
@@ -69,7 +69,7 @@ Sph::Sph()
 void Sph::searchNeighbour(int i)
 {
     Vector3d temp=Vector3d::Zero(3);
-	
+#pragma omp parallel for
     for (int j=0; j< N ; ++j) { //loop over all particles
         if (j!=i)
         {
@@ -156,7 +156,7 @@ void Sph::computeForce(int i)
     MatrixX3d f_vis=MatrixX3d::Zero(p.size(),3);
     MatrixX3d f_p=MatrixX3d::Zero(p.size(),3);
     Vector3d temp= Vector3d::Zero(3);
-    
+#pragma omp parallel for
     for (int j=0; j<N; ++j)
     {
         if ((neighbours(i,j)==1)&& (j!=i))
@@ -204,6 +204,7 @@ void Sph::step()//MatrixX2d& u,MatrixX2d& x,double dt,MatrixXi& neighbours,Vecto
     {
         computeForce(i);
     }
+#pragma omp parallel for
     for (int i=0; i<N; ++i) {
         u(i,1) += dt*f(i,1)/rho(i);
         u(i,0) += dt*f(i,0)/rho(i);
@@ -341,4 +342,5 @@ void Sph::setRadius(float r_new)
                 x(i,2)=sqrt(r_new);
             }
         }
-    }}
+    }
+}
