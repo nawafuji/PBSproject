@@ -13,8 +13,8 @@ unsigned int stepping= 10000; //(unsigned int)(1e6 * Scene::step);
 // camera parameters
 float sphi = 0.0;
 float stheta = 0.0;
-float sdepth = 100;
-float zNear = 1.0, zFar = 1000.0;
+float sdepth = 3;
+float zNear = 0.0001, zFar = 1000.0;
 
 float windowWidth = 600;
 float windowHeight = 600;
@@ -22,10 +22,10 @@ float windowHeight = 600;
 int downX;
 int downY;
 
-float gridWidth = 5.0;
+float gridWidth = 0.05;
 int gridNum = 20;
 
-char transMode = 'r';
+char transMode = 'e';
 bool isPlaying = true;
 
 using namespace std;
@@ -72,14 +72,14 @@ void dispGrid()
 {
     glPushMatrix();
     {
-      for(int i=-gridNum/2; i<=gridNum/2; i++){
+      for(int i=0; i<=gridNum/2; i++){
         glLineWidth(0.1);
         glBegin(GL_LINES);
-        glVertex3d(gridWidth*i, -gridWidth*gridNum/2, 0);
+        glVertex3d(gridWidth*i, 0, 0);
         glVertex3d(gridWidth*i, gridWidth*gridNum/2, 0);
         glEnd();
         glBegin(GL_LINES);
-        glVertex3d(-gridWidth*gridNum/2, gridWidth*i, 0);
+        glVertex3d(0, gridWidth*i, 0);
         glVertex3d(gridWidth*gridNum/2, gridWidth*i, 0);
         glEnd();
       }

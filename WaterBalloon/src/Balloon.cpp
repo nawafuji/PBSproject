@@ -1,5 +1,6 @@
 #include "Balloon.h"
 
+
 Balloon::Balloon(double r) : ParticleObject(r)
 {
     m_positions = Eigen::MatrixXd(3, 4);
@@ -22,7 +23,8 @@ Balloon::Balloon(double r, double dt, Eigen::MatrixXd positions, Eigen::MatrixXi
     m_speeds = Eigen::MatrixXd::Zero(positions.rows(), positions.cols());
     m_forces = Eigen::MatrixXd::Zero(m_positions.rows(), m_positions.cols());
     m_num_point = m_positions.rows();
-    m_mass = m_mass_all / m_num_point;
+    m_mass = m_mass_all / (double)m_num_point;
+    c = 2.0*sqrt(m_mass*k)/3.0;
     m_faces = faces;
     m_faceactive = Eigen::VectorXi::Zero(m_faces.rows());
     for(int i=0; i<m_faceactive.rows(); i++)
@@ -36,19 +38,18 @@ Balloon::Balloon(double r, double dt, Eigen::MatrixXd positions, Eigen::MatrixXi
     igl::vertex_triangle_adjacency(m_positions, m_faces, m_vertextoface, tmp_list);
     initEdges();
     computeNormals();
+
+
     calcAveRadius();
 
-    m_forces += m_air_pressure * m_normals;
     m_threshold_ratio = Eigen::VectorXd::Ones(m_edges.rows()) * threshold_ratio;
-    // std::cout << "positions" << std::endl;
-    // std::cout << m_positions << std::endl;
 
-    for(int i=0; i<m_positions.rows(); i++){
-      // std::cout << "adjacent to " << i << ": " << m_adjacency_list[i].size() << std::endl;
-    }
-    for(int i=0; i<m_positions.rows(); i++){
-      // std::cout << "normal " << i << ": " << m_normals.norm() << std::endl;
-    }
+    // for(int i=0; i<m_positions.rows(); i++){
+    //   // std::cout << "adjacent to " << i << ": " << m_adjacency_list[i].size() << std::endl;
+    // }
+    // for(int i=0; i<m_positions.rows(); i++){
+    //   // std::cout << "normal " << i << ": " << m_normals.norm() << std::endl;
+    // }
 }
 
 void Balloon::render()
@@ -87,8 +88,13 @@ void Balloon::render()
         {
           glLineWidth(0.01);
           glColor4d(1.0, 0.0, 0.0, 1.0);
-          // glBegin(GL_TRIANGLES);
+          if(renderTriangle)
+          {
+            glBegin(GL_TRIANGLES);
+          }
+          else{
           glBegin(GL_LINE_LOOP);
+          }
           glVertex3d(m_positions(m_faces(i,0),0), m_positions(m_faces(i,0),1), m_positions(m_faces(i,0),2));
           glVertex3d(m_positions(m_faces(i,1),0), m_positions(m_faces(i,1),1), m_positions(m_faces(i,1),2));
           glVertex3d(m_positions(m_faces(i,2),0), m_positions(m_faces(i,2),1), m_positions(m_faces(i,2),2));
@@ -112,7 +118,10 @@ void Balloon::update()
       Eigen::Vector3d f_p = m_forces.row(i);
       if(true)
       {
-        v_n = ((m_mass-m_step*(-c*m_adjacency_list[i].size()))*v_p +(f_p-d*v_p)*m_step)/(m_mass-m_step*(-c*m_adjacency_list[i].size())-m_step*m_step*(-k*m_adjacency_list[i].size()));
+        // v_n = ((m_mass-m_step*(-c*m_adjacency_list[i].size()))*v_p +(f_p-c*v_p)*m_step)/(m_mass-m_step*(-c*m_adjacency_list[i].size())-m_step*m_step*(-k*m_adjacency_list[i].size()));
+        // v_n = ((m_mass-m_step*(-c))*v_p + f_p)/(m_mass-m_step*(-c)-m_step*m_step*(-k));
+        v_n = ((m_mass-m_step*(-d))*v_p + f_p-d*v_p)/(m_mass-m_step*(-d)-m_step*m_step*(-k));
+        // v_n = ((m_mass-m_step*(-d))*v_p +(f_p-d*v_p)*m_step)/(m_mass-m_step*(-d)-m_step*m_step*(-k*m_adjacency_list[i].size()));
       }
       {
         v_n = v_p + m_step / m_mass * f_p;
@@ -122,6 +131,7 @@ void Balloon::update()
     }
     m_positions = X_n;
     m_speeds = V_n;
+    checkfloor();
 
     calcAveRadius();
 
@@ -132,7 +142,7 @@ void Balloon::update()
       // m_air_pressure /= 5.0;
       for(int i=0; i<m_positions.rows(); i++)
       {
-        // m_forces.row(i) += m_mass * g * Eigen::Vector3d(0,0,-1);
+        m_forces.row(i) += m_mass * g * Eigen::Vector3d(0,0,-1);
       }
 
       for(int i=0; i<m_faces.rows(); i++)
@@ -164,7 +174,6 @@ void Balloon::update()
           m_faceactive(m_edgetoface(i,0)) = 0;
           m_faceactive(m_edgetoface(i,1)) = 0;
           isActive = false;
-          std::cout << "inactive" << std::endl;
         }
       }
     }
@@ -181,10 +190,14 @@ void Balloon::update()
         Eigen::Vector3d v_1 = m_speeds.row(m_edges(i,0));
         Eigen::Vector3d v_2 = m_speeds.row(m_edges(i,1));
 
-        if((x_1-x_2).norm() > m_edgelength(i)){
+        if((x_1-x_2).norm()>m_edgelength(i)){
           f_n -= k*((x_1 - x_2).norm() - m_edgelength(i))*(x_1 - x_2).normalized();
         }
-          f_n -= c*((v_1 - v_2).dot((x_1 - x_2).normalized()))*(x_1 - x_2).normalized();
+        else{
+          f_n -= 1.0*k*((x_1 - x_2).norm() - m_edgelength(i))*(x_1 - x_2).normalized();
+        }
+
+        f_n -= c*((v_1 - v_2).dot((x_1 - x_2).normalized()))*(x_1 - x_2).normalized();
 
         m_forces.row(m_edges(i,0)) += f_n;
         m_forces.row(m_edges(i,1)) += -f_n;
@@ -193,42 +206,16 @@ void Balloon::update()
 
     computeNormals();
 
-    m_forces += m_air_pressure * m_normals;
-
-    /*
-    for(int i=0; i<m_positions.rows(); i++)
+    if(useWater)
     {
-      Eigen::Vector3d f_n = Eigen::Vector3d(0,0,0);
-      Eigen::Vector3d x_p = m_positions.row(i);
-      Eigen::Vector3d v_p = m_speeds.row(i);
-
-      // f_n += m_mass * g * Eigen::Vector3d(0,0,-1);
-
-      f_n += m_air_pressure * m_normals.row(i);
-
-      for(int j=0; j<m_adjacency_list[i].size(); j++)
-      {
-        Eigen::Vector3d x_j = m_positions.row(m_adjacency_list[i][j]);
-        Eigen::Vector3d v_j = m_speeds.row(m_adjacency_list[i][j]);
-
-        f_n -= k*((x_p - x_j).norm() - m_length_list[i][j])*(x_p - x_j).normalized();
-        f_n -= c*((v_p - v_j).dot((x_p - x_j).normalized()))*(x_p - x_j).normalized();
-      }
-      Eigen::Vector3d v_n;
-      if(true)
-      {
-        v_n = ((m_mass-m_step*(-c*m_adjacency_list[i].size()))*v_p +(f_n-d*v_p)*m_step)/(m_mass-m_step*(-c*m_adjacency_list[i].size())-m_step*m_step*(-k*m_adjacency_list[i].size()));
-      }
-      {
-        v_n = v_p + m_step / m_mass * f_n;
-      }
-      X_n.row(i) = x_p + m_step * v_n;
-      V_n.row(i) = v_n;
+      m_forces += m_air_pressure * m_normals / (double)m_average_radius;
+      // std::cout << "p_force" << m_air_pressure * (double)m_average_radius*(double)m_average_radius*4.0*M_PI/m_num_point<< std::endl;
     }
-    */
+    {
+      m_forces += m_air_pressure * m_normals / (double)m_average_radius;
+      // std::cout << "p_force" << m_air_pressure / (double)m_average_radius << std::endl;
+    }
 
-    // m_positions = X_n;
-    // m_speeds = V_n;
 }
 
 void Balloon::computeNormals()
@@ -275,19 +262,15 @@ void Balloon::pomp(double p)
     m_air_pressure += p; 
 }
 
+/* TODO: implement */
 void Balloon::burst()
 {
-    // int i = 100;
-    // m_edgeactive(i) = 0;
-    // m_faceactive(m_edgetoface(i,0)) = 0;
-    // m_faceactive(m_edgetoface(i,1)) = 0;
-    // isActive = false;
-    // std::cout << "inactive" << std::endl;
-    int i = 100;
-    m_faceactive(i) = 0;
-    m_edgeactive(m_facetoedge(i,0)) = 0;
-    m_edgeactive(m_facetoedge(i,1)) = 0;
-    m_edgeactive(m_facetoedge(i,2)) = 0;
+    int id = 100;
+    m_faceactive(id) = 0;
+    m_edgeactive(m_facetoedge(id,0)) = 0;
+    m_edgeactive(m_facetoedge(id,1)) = 0;
+    m_edgeactive(m_facetoedge(id,2)) = 0;
+
     isActive = false;
 }
 
@@ -305,7 +288,29 @@ double Balloon::getAveRadius()
     return m_average_radius;
 }
 
+double Balloon::getAveSpeed()
+{
+    return m_speeds.row(0).norm();
+}
+
 void Balloon::setAirPressure(double p)
 {
     m_air_pressure = p;
+}
+
+void Balloon::pomp()
+{
+    double pompstep = 0.000001;
+    m_air_pressure += pompstep;
+}
+
+void Balloon::checkfloor()
+{
+    double limit = -0.5;
+    for (int i = 0; i<m_positions.rows(); i++) {
+      if(m_positions(i,2) <= limit){
+        m_positions(i,2) = limit;
+        m_speeds.row(i) = m_speeds.row(i)/10.0;
+      }
+    }
 }

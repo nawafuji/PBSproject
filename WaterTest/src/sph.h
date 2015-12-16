@@ -22,6 +22,7 @@ public:
     void render();
     void update();
     void expand();
+    void addParticles(int num, double radius);
     float getPressure();
     void setRadius(float r_new);
 

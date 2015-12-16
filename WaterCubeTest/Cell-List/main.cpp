@@ -13,8 +13,8 @@ unsigned int stepping= 10000; //(unsigned int)(1e6 * Scene::step);
 // camera parameters
 float sphi = 0.0;
 float stheta = 0.0;
-float sdepth = 100;
-float zNear = 1.0, zFar = 1000.0;
+float sdepth = 10;
+float zNear = 0.01, zFar = 100.0;
 
 float windowWidth = 600;
 float windowHeight = 600;
@@ -22,8 +22,8 @@ float windowHeight = 600;
 int downX;
 int downY;
 
-float gridWidth = 5.0;
-int gridNum = 20;
+float gridWidth = 1.0;
+int gridNum = 10;
 
 char transMode = 'r';
 bool isPlaying = true;
@@ -41,6 +41,7 @@ unsigned int getTime()
     return uCur.lo;
 }
 
+
 void init()
 {
     glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -52,10 +53,10 @@ void init()
     glEnable(GL_LINE_SMOOTH);
 
     // Setting light
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    GLfloat lightpos[] = {0.0, 0.0, 50.0, 0.0};
-    glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+    //glEnable(GL_LIGHTING);
+  //  glEnable(GL_LIGHT0);
+  //  GLfloat lightpos[] = {0.0, 0.0, 50.0, 0.0};
+  //  glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
 
     // Setting depth
     glEnable(GL_DEPTH_TEST);
@@ -115,7 +116,7 @@ void display(void)
           obj->step();
       }
     }
-obj->render();
+ obj->render();
     
     dispGrid();
     

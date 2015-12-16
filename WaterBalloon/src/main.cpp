@@ -14,15 +14,18 @@
 
 
 unsigned int lastTick=0;
-double timestep = 0.1; //second
+double timestep = 0.004; //second
 unsigned int stepping= (unsigned int)(timestep * 1e6); //(unsigned int)(1e6 * Scene::step);
 
+// switch useWater to change mode
+// bool useWater = false;
+bool useWater = true;
 
 // camera parameters
 float sphi = 0.0;
 float stheta = 0.0;
-float sdepth = 300;
-float zNear = 1.0, zFar = 1000.0;
+float sdepth = 3.0;
+float zNear = 0.0001, zFar = 100.0;
 
 float windowWidth = 600;
 float windowHeight = 600;
@@ -30,19 +33,24 @@ float windowHeight = 600;
 int downX;
 int downY;
 
-float gridWidth = 5.0;
+float gridWidth = 0.05;
 int gridNum = 20;
 
 char transMode = 'e';
-bool isPlaying = false;
+bool isPlaying = true;
+bool isPomping = false;
 bool once = false;
 
-using namespace std;
+int wcount = 0;
+double limit = -0.8;
+bool renderTriangle = false;
+
 
 Balloon* balloon = NULL;
 Sph* sph = NULL;
 
- 
+
+using namespace std;
 
 unsigned int getTime()
 {
@@ -89,9 +97,13 @@ void initBalloon()
     Eigen::MatrixXd VN;
     std::vector<std::vector<int>> VV;
 
-    igl::readOFF("../model/sphere_scaled.off", V, F);
+    igl::readOFF("../model/sphere_m.off", V, F);
+    // igl::readOFF("../model/bunny.off", V, F);
+    // igl::readOFF("../model/bumpy_cube.off", V, F);
+    // igl::readOFF("../model/cat.off", V, F);
 
-    balloon = new Balloon(0.01, timestep, V, F);
+    balloon = new Balloon(0.001, timestep, V, F);
+    balloon->useWater = useWater;
 }
 
 void initSph()
@@ -99,8 +111,7 @@ void initSph()
     sph = new Sph();
     if(balloon != NULL)
     {
-      sph->setRadius(balloon->getAveRadius());
-      std::cout << balloon->getAveRadius() << std::endl;
+      sph->setRadius(balloon->getAveRadius(), 0);
     }
 }
 
@@ -112,16 +123,25 @@ void dispGrid()
       for(int i=-gridNum/2; i<=gridNum/2; i++){
         glLineWidth(0.1);
         glBegin(GL_LINES);
-        glVertex3d(gridWidth*i, -gridWidth*gridNum/2, 0);
-        glVertex3d(gridWidth*i, gridWidth*gridNum/2, 0);
+        glVertex3d(gridWidth*i, -gridWidth*gridNum/2, limit);
+        glVertex3d(gridWidth*i, gridWidth*gridNum/2, limit);
         glEnd();
         glBegin(GL_LINES);
-        glVertex3d(-gridWidth*gridNum/2, gridWidth*i, 0);
-        glVertex3d(gridWidth*gridNum/2, gridWidth*i, 0);
+        glVertex3d(-gridWidth*gridNum/2, gridWidth*i, limit);
+        glVertex3d(gridWidth*gridNum/2, gridWidth*i, limit);
         glEnd();
       }
     }
     glPopMatrix();
+}
+
+void render_string(float x, float y, std::string const& str){
+    float z = 0.5f;
+    //glRasterPos3f(x, y, z);
+    glWindowPos2i(20, windowHeight-40);
+    for(int i=0; i<str.length(); i++){
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, str[i]);
+    }
 }
 
 void display(void)
@@ -149,11 +169,53 @@ void display(void)
       lastTick += stepping;
       if(isPlaying)
       {
+        if(isPomping)
+        {
+          if(useWater)
+          {
+            if(balloon->isActive)
+            {
+              if(wcount == 1)
+              {
+                sph->addParticle(1, 5.0);
+                // sph->addParticles(1, balloon->getAveRadius());
+                wcount = 0;
+                render_string(0.0f, 0.0f, "Pumping");
+              }
+              wcount++;
+            }
+            else
+            {
+              sph->discardBoundary();
+            }
+          }
+          else
+          {
+            balloon->pomp();
+            render_string(0.0f, 0.0f, "Pumping");
+          }
+        }
+        if(useWater)
+        {
+          sph->step();
+          double p = sph->getPressure();
+          // if(p>1e6){
+            // balloon->setAirPressure((p-1e6)/1e6/1e4/1.5);
+            if(sph->isFilled()){
+              // balloon->setAirPressure((p-1e5)/1e10);
+              balloon->setAirPressure((p-1e5)/1e10/2);
+            }
+            else{
+              balloon->setAirPressure(0);
+            }
+           // }
+        }
         balloon->update();
-        sph->setRadius(balloon->getAveRadius());
-        sph->step();
-        balloon->setAirPressure(sph->getPressure()/1000000.0);
-        std::cout << sph->getPressure() << std::endl;
+
+        if(balloon->isActive)
+        {
+          sph->setRadius(balloon->getAveRadius(), balloon->getAveSpeed());
+        }
         if(once)
         {
           isPlaying = false;
@@ -162,7 +224,10 @@ void display(void)
       }
     }
     balloon->render();
-    sph->render();
+    if(useWater)
+    {
+      sph->render();
+    }
 
     dispGrid();
     
@@ -233,7 +298,7 @@ void keyboard(unsigned char key, int x, int y)
         once = true;
         break;
       case 'h':
-        balloon->pomp(0.02);
+        isPomping = !isPomping;
         break;
       case 'l':
         balloon->pomp(0.02);
@@ -241,17 +306,18 @@ void keyboard(unsigned char key, int x, int y)
       case 'b':
         balloon->burst();
         break;
-        //set a new boundary sphere of size 1.5
+        // set a new boundary sphere of size 1.5
       case 's':
-        sph->setRadius(1.5);
+        // sph->setRadius(1.5);
         break;
         // double the number of particles
       case 'd':
-        sph->expand();
+        sph->addParticles(10, balloon->getAveRadius());
         break;
         // print the average pressure
-      case 'g':
-        std::cout << sph->getPressure()<< "\n";
+      case 't':
+        renderTriangle = !renderTriangle;
+        balloon->renderTriangle = renderTriangle;
         break;
       default:
         break;
@@ -262,6 +328,7 @@ void idle(void)
 {
     glutPostRedisplay();
 }
+
 
 int main(int argc, char** argv)
 {

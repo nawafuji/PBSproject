@@ -9,12 +9,12 @@ class sph {
 public:
     sph();
   //  int pppp;
-    Eigen::MatrixX2d x;
-    Eigen::MatrixX2d u;
+    Eigen::MatrixX3d x;
+    Eigen::MatrixX3d u;
     Eigen::MatrixXi neighbours;
     Eigen::VectorXd rho;
     Eigen::VectorXd p;
-    Eigen::MatrixX2d f;
+    Eigen::MatrixX3d f;
 
     void render();
     void update();

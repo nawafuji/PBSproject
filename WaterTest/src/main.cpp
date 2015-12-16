@@ -7,14 +7,14 @@
 #include "sph.h"
 
 unsigned int lastTick=0;
-unsigned int stepping= 10000; //(unsigned int)(1e6 * Scene::step);
+unsigned int stepping= 1000; //(unsigned int)(1e6 * Scene::step);
 
 
 // camera parameters
 float sphi = 0.0;
 float stheta = 0.0;
-float sdepth = 10;
-float zNear = 0.01, zFar = 100.0;
+float sdepth = 3.0;
+float zNear = 0.001, zFar = 100.0;
 
 float windowWidth = 600;
 float windowHeight = 600;
@@ -22,8 +22,8 @@ float windowHeight = 600;
 int downX;
 int downY;
 
-float gridWidth = 1.0;
-int gridNum = 10;
+float gridWidth = 0.05;
+int gridNum = 20;
 
 char transMode = 'r';
 bool isPlaying = true;
@@ -113,6 +113,7 @@ void display(void)
       if(isPlaying)
       {
           obj->step();
+          std::cout << obj->getPressure()<< "\n";
       }
     }
  obj->render();
@@ -175,8 +176,8 @@ void keyboard(unsigned char key, int x, int y)
             obj->setRadius(1.5);
             break;
         // double the number of particles
-        case 'l':
-            obj->expand();
+        case 'h':
+            obj->addParticles(10, 0.1);
             break;
           // print the average pressure
         case 'g':
