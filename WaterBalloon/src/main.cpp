@@ -164,6 +164,7 @@ void display(void)
     glRotated(-stheta, 1.0, 0.0, 0.0);
     glRotated(sphi, 0.0, 0.0, 1.0);
 
+    std::cout << "ddd" << std::endl;
     if (tm-lastTick > stepping)
     {
       lastTick += stepping;
@@ -180,7 +181,7 @@ void display(void)
                 sph->addParticle(1, 5.0);
                 // sph->addParticles(1, balloon->getAveRadius());
                 wcount = 0;
-                render_string(0.0f, 0.0f, "Pumping");
+                // render_string(0.0f, 0.0f, "Pumping");
               }
               wcount++;
             }
@@ -192,23 +193,19 @@ void display(void)
           else
           {
             balloon->pomp();
-            render_string(0.0f, 0.0f, "Pumping");
+            // render_string(0.0f, 0.0f, "Pumping");
           }
         }
         if(useWater)
         {
           sph->step();
           double p = sph->getPressure();
-          // if(p>1e6){
-            // balloon->setAirPressure((p-1e6)/1e6/1e4/1.5);
             if(sph->isFilled()){
-              // balloon->setAirPressure((p-1e5)/1e10);
               balloon->setAirPressure((p-1e5)/1e10/2);
             }
             else{
               balloon->setAirPressure(0);
             }
-           // }
         }
         balloon->update();
 

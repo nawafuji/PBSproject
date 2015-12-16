@@ -1,11 +1,9 @@
-
 //TODO: reset rho(i) to 0 or rho_0 in computedensity???
 #include <iostream>
 #include <Eigen/Dense>
 #include <cmath>
 #include <random>
 #include "Sph.h"
-#include <omp.h>
 
 using  namespace Eigen;//Eigen::Matrix2Xd, Eigen::MatrixXd,Eigen::MatrixXi,Eigen::VectorXd;
 
@@ -70,7 +68,7 @@ Sph::Sph()
 void Sph::searchNeighbour(int i)
 {
     Vector3d temp=Vector3d::Zero(3);
-#pragma omp parallel for
+// #pragma omp parallel for
     for (int j=0; j< N ; ++j) { //loop over all particles
         if (j!=i)
         {
@@ -157,7 +155,7 @@ void Sph::computeForce(int i)
     MatrixX3d f_vis=MatrixX3d::Zero(p.size(),3);
     MatrixX3d f_p=MatrixX3d::Zero(p.size(),3);
     Vector3d temp= Vector3d::Zero(3);
-#pragma omp parallel for
+// #pragma omp parallel for
     for (int j=0; j<N; ++j)
     {
         if ((neighbours(i,j)==1)&& (j!=i))
@@ -205,7 +203,7 @@ void Sph::step()//MatrixX2d& u,MatrixX2d& x,double dt,MatrixXi& neighbours,Vecto
     {
         computeForce(i);
     }
-#pragma omp parallel for
+// #pragma omp parallel for
     for (int i=0; i<N; ++i) {
         u(i,1) += dt*f(i,1)/rho(i);
         u(i,0) += dt*f(i,0)/rho(i);
@@ -214,8 +212,6 @@ void Sph::step()//MatrixX2d& u,MatrixX2d& x,double dt,MatrixXi& neighbours,Vecto
         double x_t=(x(i,0)+ dt*u(i,0));
         double z_t=(x(i,2)+ dt*u(i,2));
 
-
-        
         if(useBoundary)
         {
             // std::cout <<"sphere"<<std::endl;
@@ -303,7 +299,6 @@ void Sph::expand()
 
 void Sph::addParticle(int num, double v)
 {
-  std::cout << "NumOfParticles: " << N << std::endl;
   double pressure = getPressure();
     N+=num;
     x.conservativeResize(N,3);
@@ -334,7 +329,6 @@ void Sph::addParticle(int num, double v)
 }
 void Sph::addParticles(int num, double radius)
 {
-  std::cout << "NumOfParticles: " << N << std::endl;
   double pressure = getPressure();
     N+=num;
     x.conservativeResize(N,3);
@@ -385,7 +379,8 @@ void Sph::setRadius(float r_new, double v)
          Eigen::Vector3d vec = x.row(i).normalized();
         if ((x_t*x_t+y_t*y_t+z_t*z_t)>radius_squared) {
             x.row(i)=vec*r_new;
-            u.row(i)=-x.normalized()*v;
+            // u.row(i)=(-x.normalized()*v);
+            u.row(i)=(-x.row(i).normalized()*v);
         }
     }
 }
@@ -399,4 +394,4 @@ bool Sph::isFilled(){
 
   // std::cout << "dense" << pow(d,3)*N/pow(sqrt(radius_squared),3)<<std::endl;
   return 4.0/3.0*M_PI*pow(d,3.0)*N > 4.0/3.0*M_PI*pow(sqrt(radius_squared),3.0);
-}]
+}
