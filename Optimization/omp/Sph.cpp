@@ -11,21 +11,20 @@ using  namespace Eigen;//Eigen::Matrix2Xd, Eigen::MatrixXd,Eigen::MatrixXi,Eigen
 
 
 
-const int N_start=0;
-//const double d=0.05; //1.
-const double d=0.02; //1.
-const double h=2*d+0.00001;//2*d;
+const int N_start=100;
+const double d=0.05; //1.
+const double h=0.100001;//2*d;
 const double rho_0=1000;
-const double m=d*d*d*rho_0;
+const double m=0.125;//d*d*d*rho_0;
 const double mu=25;
 const double cutOff=h;
-const double boundary=0.8;
+const double boundary=0.5;
 
 const double k=1000;
 
 const double g=9.81;
 const int N_steps=10;
-const double dt=0.004;
+const double dt=0.1;
 
 const double radius_0=1;
 
@@ -45,6 +44,7 @@ Sph::Sph()
     rho=VectorXd::Zero(N);
     p=VectorXd::Zero(N);
     double q=0,qq=0;
+#pragma omp parallel for
     for (int i=0; i<N; ++i) {
         x(i,0)=d*(i%10);
         if(i%10==0){++q;}
@@ -54,7 +54,7 @@ Sph::Sph()
             q=0;
         }
         x(i,1)=d*(q);
-        x(i,2)=d*((qq))-0.02;
+        x(i,2)=d*((qq))+0.1;
         
         u(i,0)=0;//-10*dis(mt_rand);
         u(i,1)=0;//10*dis(mt_rand);
@@ -128,6 +128,7 @@ void Sph::computeDensity(int i)
     Vector3d temp=Vector3d::Zero(3);
     double rho_temp=0.;
     rho(i)=rho_0;
+#pragma omp parallel for
     for (int j=0; j<N; ++j)
     {
         if ((neighbours(i,j)==1)&& (j!=i))
@@ -191,13 +192,13 @@ void Sph::computeForce(int i)
 }
                        
                        
-void Sph::step()//MatrixX2d& u,MatrixX2d& x,double dt,MatrixXi& neighbours,VectorXd& p,VectorXd& rho,MatrixX2d& f)
+void Sph::step()
 {
     for (int i=0; i<N; ++i) {
-        searchNeighbour(i);//,x,neighbours);
+        searchNeighbour(i);
     }
     for (int i=0; i<N; ++i) {
-        computeDensity(i);//rho,i,x,neighbours);
+        computeDensity(i);
         computePressure(i);
     }
  
@@ -213,44 +214,18 @@ void Sph::step()//MatrixX2d& u,MatrixX2d& x,double dt,MatrixXi& neighbours,Vecto
         double y_t =(x(i,1)+ dt*u(i,1));
         double x_t=(x(i,0)+ dt*u(i,0));
         double z_t=(x(i,2)+ dt*u(i,2));
-
-
         
-        if(useBoundary)
-        {
-            // std::cout <<"sphere"<<std::endl;
-          if ((x_t*x_t+y_t*y_t+z_t*z_t)>radius_squared) 
-            {
-             u(i,2)=-0.1*u(i,2);
-               u(i,1)=-0.1*u(i,1);
-              u(i,0)=-0.1*u(i,0);
-            }
+        if ((x_t*x_t+y_t*y_t+z_t*z_t)>radius_squared) {
+             u(i,1)=-0.1*u(i,1);
+            u(i,0)=-0.1*u(i,0);;
 
-            else{
-                x(i,1) += dt*u(i,1);
-                x(i,0) += dt*u(i,0);
-                x(i,2) += dt*u(i,2);
-
-            }
-        }
-
-        if(!useBoundary){
-            x(i,0) += dt*u(i,0);
+        }else{
             x(i,1) += dt*u(i,1);
+            x(i,0) += dt*u(i,0);
+            x(i,2) += dt*u(i,2);
 
-            if((x(i,2)+ dt*u(i,2))<=-boundary) {
-                x(i,2)=-boundary;
-                u(i,2)=-0.1*u(i,2);
-            }else if((x(i,2)+dt*u(i,2))>=boundary)
-            {
-                x(i,2)=boundary;
-                u(i,2)=-0.1*u(i,2);
-            }else
-            {
-                x(i,2) += dt*u(i,2);
-            }
         }
-
+   
     }
     
     
@@ -258,21 +233,22 @@ void Sph::step()//MatrixX2d& u,MatrixX2d& x,double dt,MatrixXi& neighbours,Vecto
 }
 void Sph::render()
 {
-    glColor4f(0.0,0.0,0.5,0.5);
+    glColor3f(0.0,0.0,0.5);
     for(int i=0; i<N; i++)
     {
         glPushMatrix();
         {
             glTranslated(x(i,0), x(i,1), x(i,2));
-            glutSolidSphere(d/10, 100, 100);
+            glutSolidSphere(0.1, 100, 100);
         }
         glPopMatrix();
     }
 }
 
+
 void Sph::expand()
 {
-     N=N+N_steps;
+     N*=2;
     x.conservativeResize(N,3);
     u.conservativeResize(N,3);
     f.conservativeResize(N,3);
@@ -282,7 +258,7 @@ void Sph::expand()
 
     int q=0;
     int qq=0;
-    for (int i=(N-N_steps); i<N; ++i) {
+    for (int i=(N/2); i<N; ++i) {
         x(i,0)=d*(i%10);
         if(i%10==0){++q;}
         if(i%50==0)
@@ -301,69 +277,6 @@ void Sph::expand()
     }
 }
 
-void Sph::addParticle(int num, double v)
-{
-  std::cout << "NumOfParticles: " << N << std::endl;
-  double pressure = getPressure();
-    N+=num;
-    x.conservativeResize(N,3);
-    u.conservativeResize(N,3);
-    f.conservativeResize(N,3);
-    rho.conservativeResize(N);
-    neighbours.conservativeResize(N,N);
-    p.conservativeResize(N);
-   
-    for(int i = N-num; i<N; i++){
-       
-        double r = (double)(rand() % 100) / 100.0 * sqrt(radius_squared);
-        double theta = (double)(rand() % 100) / 100.0 * 2.0 * M_PI;
-
-        x(i,0)=r*cos(theta);
-        x(i,1)=r*sin(theta);
-        x(i,2)=-sqrt(radius_squared)+0.001;
-       
-        u(i,0)=0;//-10*dis(mt_rand);
-        u(i,1)=0;//10*dis(mt_rand);
-        u(i,2)=v;//10*dis(mt_rand);
-       
-        rho(i)=rho_0;
-        p(i) = pressure;
-       
-    }
-   
-}
-void Sph::addParticles(int num, double radius)
-{
-  std::cout << "NumOfParticles: " << N << std::endl;
-  double pressure = getPressure();
-    N+=num;
-    x.conservativeResize(N,3);
-    u.conservativeResize(N,3);
-    f.conservativeResize(N,3);
-    rho.conservativeResize(N);
-    neighbours.conservativeResize(N,N);
-    p.conservativeResize(N);
-   
-    for(int i = N-num; i<N; i++){
-       
-        double r = (double)(rand() % 100) / 100.0 * radius;
-        double theta = (double)(rand() % 100) / 100.0 * 2.0 * M_PI;
-        double phi = (double)(rand() % 100) / 100.0 *  M_PI;
-        x(i,0)=r*sin(phi)*cos(theta);
-        x(i,1)=r*sin(phi)*sin(theta);
-        x(i,2)=r*cos(phi);
-       
-        u(i,0)=0;//-10*dis(mt_rand);
-        u(i,1)=0;//10*dis(mt_rand);
-        u(i,2)=0;//10*dis(mt_rand);
-       
-        rho(i)=rho_0;
-        p(i) = pressure;
-       
-    }
-   
-}
-
 float Sph::getPressure()
 {
     float p_tot=0;
@@ -373,7 +286,7 @@ float Sph::getPressure()
     }
     return p_tot/N;
 }
-void Sph::setRadius(float r_new, double v)
+void Sph::setRadius(float r_new)
 {
     radius_squared=r_new*r_new;
     double x_t,z_t,y_t;
@@ -382,21 +295,16 @@ void Sph::setRadius(float r_new, double v)
         x_t=x(i,0);
          y_t=x(i,1);
          z_t=x(i,2);
-         Eigen::Vector3d vec = x.row(i).normalized();
         if ((x_t*x_t+y_t*y_t+z_t*z_t)>radius_squared) {
-            x.row(i)=vec*r_new;
-            u.row(i)=-x.normalized()*v;
+            if (x_t*x_t>radius_squared) {
+                x(i,0)=sqrt(r_new);
+            }
+            if (y_t*y_t>radius_squared) {
+                x(i,1)=sqrt(r_new);
+            }
+            if (z_t*z_t>radius_squared) {
+                x(i,2)=sqrt(r_new);
+            }
         }
     }
 }
-
-void Sph::discardBoundary(){
-  setRadius(10000, 0);
-  useBoundary=false;
-}
-
-bool Sph::isFilled(){
-
-  // std::cout << "dense" << pow(d,3)*N/pow(sqrt(radius_squared),3)<<std::endl;
-  return 4.0/3.0*M_PI*pow(d,3.0)*N > 4.0/3.0*M_PI*pow(sqrt(radius_squared),3.0);
-}]

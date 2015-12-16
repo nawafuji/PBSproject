@@ -5,19 +5,26 @@
 #include <Eigen/Geometry>
 #include <random>
 
-class sph {
+class Sph {
 public:
-    sph();
+    Sph();
   //  int pppp;
-    Eigen::MatrixX2d x;
-    Eigen::MatrixX2d u;
+    Eigen::MatrixX3d x;
+    Eigen::MatrixX3d u;
     Eigen::MatrixXi neighbours;
     Eigen::VectorXd rho;
     Eigen::VectorXd p;
-    Eigen::MatrixX2d f;
+    Eigen::MatrixX3d f;
+    
+    int N;
+    double radius_squared;
 
     void render();
     void update();
+    void expand();
+    float getPressure();
+    void setRadius(float r_new);
+
     
     void step();
     void searchNeighbour(int i);

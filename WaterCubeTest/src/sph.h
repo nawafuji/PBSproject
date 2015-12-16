@@ -5,30 +5,19 @@
 #include <Eigen/Geometry>
 #include <random>
 
-class Sph {
+class sph {
 public:
-    Sph();
+    sph();
+  //  int pppp;
     Eigen::MatrixX3d x;
     Eigen::MatrixX3d u;
     Eigen::MatrixXi neighbours;
     Eigen::VectorXd rho;
     Eigen::VectorXd p;
     Eigen::MatrixX3d f;
-    bool useBoundary = true;
-    
-    int N;
-    double radius_squared;
 
     void render();
     void update();
-    void expand();
-    void addParticle(int num, double v);
-    void addParticles(int num, double radius);
-    float getPressure();
-    void setRadius(float r_new, double v);
-    void discardBoundary();
-    bool isFilled();
-
     
     void step();
     void searchNeighbour(int i);
@@ -38,4 +27,6 @@ public:
     void computeDensity(int i);
     void computePressure(int i);
     void computeForce(int i);
+    
+    
 };

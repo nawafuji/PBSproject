@@ -7,14 +7,14 @@
 #include "sph.h"
 
 unsigned int lastTick=0;
-unsigned int stepping= 1000; //(unsigned int)(1e6 * Scene::step);
+unsigned int stepping= 10000; //(unsigned int)(1e6 * Scene::step);
 
 
 // camera parameters
 float sphi = 0.0;
 float stheta = 0.0;
-float sdepth = 3.0;
-float zNear = 0.001, zFar = 100.0;
+float sdepth = 10;
+float zNear = 0.01, zFar = 100.0;
 
 float windowWidth = 600;
 float windowHeight = 600;
@@ -22,8 +22,8 @@ float windowHeight = 600;
 int downX;
 int downY;
 
-float gridWidth = 0.05;
-int gridNum = 20;
+float gridWidth = 1.0;
+int gridNum = 10;
 
 char transMode = 'r';
 bool isPlaying = true;
@@ -41,6 +41,7 @@ unsigned int getTime()
     return uCur.lo;
 }
 
+
 void init()
 {
     glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -52,10 +53,10 @@ void init()
     glEnable(GL_LINE_SMOOTH);
 
     // Setting light
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    GLfloat lightpos[] = {0.0, 0.0, 50.0, 0.0};
-    glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+    //glEnable(GL_LIGHTING);
+  //  glEnable(GL_LIGHT0);
+  //  GLfloat lightpos[] = {0.0, 0.0, 50.0, 0.0};
+  //  glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
 
     // Setting depth
     glEnable(GL_DEPTH_TEST);
@@ -113,7 +114,6 @@ void display(void)
       if(isPlaying)
       {
           obj->step();
-          std::cout << obj->getPressure()<< "\n";
       }
     }
  obj->render();
@@ -171,18 +171,6 @@ void motion(int x, int y)
 void keyboard(unsigned char key, int x, int y)
 {
     switch(key){
-            //set a new boundary sphere of size 1.5
-            case 's':
-            obj->setRadius(1.5);
-            break;
-        // double the number of particles
-        case 'h':
-            obj->addParticles(10, 0.1);
-            break;
-          // print the average pressure
-        case 'g':
-            std::cout << obj->getPressure()<< "\n";
-            break;
       // rotating mode
       case 'r':
         transMode = key;

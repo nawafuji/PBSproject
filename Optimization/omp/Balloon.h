@@ -13,10 +13,6 @@ public:
     Balloon(double r);
     Balloon(double r, double dt, Eigen::MatrixXd positions, Eigen::MatrixXi faces);
 
-    bool isActive = true;
-    bool useWater = false;
-    bool renderTriangle = false;
-    bool renderNormals = false;
     void computeNormals();
     void render();
     void update();
@@ -26,9 +22,6 @@ public:
     void burst();
     void calcAveRadius();
     double getAveRadius();
-    double getAveSpeed();
-    void pomp();
-    void checkfloor();
 
 private:
     Eigen::MatrixXd m_positions;
@@ -45,17 +38,22 @@ private:
     Eigen::VectorXi m_faceactive;
     std::vector<std::vector<int>> m_adjacency_list;
     std::vector<std::vector<int>> m_vertextoface;
-    double m_mass_all = 0.01;
+    double m_mass_all = 10.0;
     int m_num_point;
-    double m_radius = 0.001;
+    double m_radius = 0.1;
     double m_average_radius;
     double m_step = 0.01;
     double m_mass;
-    double k = 0.1;
-    double c = 0.00;
-    double d = 0.2;
+    double k = 0.3;
+    double c = 0.03;
+    // double k = 1000.0;
+    // double c = 0.00;
+    double d = 0;
     double g = 9.8;
-    double threshold_ratio = 4.5;
+    double threshold_ratio = 10;
     Eigen::VectorXd m_threshold_ratio;
+    bool isActive = true;
+
     double m_air_pressure = 0.0;
+    bool renderNormals = false;
 };
